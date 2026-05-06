@@ -1,0 +1,51 @@
+#Azure deployment outputs (may contain sensitive info)
+*.json
+!bicep/**/*.json
+
+#Local enviroment files
+.env
+.env.local
+
+#OS files
+.DS_Store
+Thumbs.db
+EOD
+cat > .gitignore << 'EOF'
+#Azure deployment outputs (may contain sensitive info)
+*.json
+!bicep/**/*.json
+
+#Local enviroment files
+.env
+.env.local
+
+#OS files
+.DS_Store
+Thumbs.db
+EOD
+
+cat > .gitignore << 'EOF'
+#Azure deployment outputs (may contain sensitive info)
+*.json
+!bicep/**/*.json
+
+#Local enviroment files
+.env
+.env.local
+
+#OS files
+.DS_Store
+Thumbs.db
+EOD
+cat > .gitignore << 'EOF'
+#Azure deployment outputs (may contain sensitive info)
+*.json
+!bicep/**/*.json
+
+#Local enviroment files
+.env
+.env.local
+
+#OS files
+.DS_Store
+Thumbs.db
