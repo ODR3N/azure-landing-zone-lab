@@ -7,7 +7,7 @@
 [![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4?style=flat-square&logo=microsoftazure&logoColor=white)](https://azure.microsoft.com)
 [![Bicep](https://img.shields.io/badge/IaC-Bicep-5C2D91?style=flat-square&logo=microsoftazure&logoColor=white)](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)]()
+[![Status](https://img.shields.io/badge/Status-Complete-brightgreen?style=flat-square)]()
 
 <br>
 
@@ -135,9 +135,13 @@ azure-landing-zone-lab/
 │   ├── shared-services.md          # Bastion, Key Vault, Log Analytics
 │   ├── rbac-design.md              # Role assignments and reasoning
 │   └── monitoring-design.md        # Alerts, budget, KQL queries
+├── screenshots/                    # Project evidence and documentation
 ├── .gitignore
 └── README.md
 ```
+
+![Project Structure](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Structure.png)
+![Bicep Structure](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Bicep_structure.png)
 
 <br>
 
@@ -169,7 +173,10 @@ az deployment sub create \
   --name 'deploy-landing-zone' \
   --location eastus \
   --template-file bicep/main.bicep \
-  --parameters keyVaultName=kv-your-unique-name
+  --parameters \
+    keyVaultName=kv-your-unique-name \
+    adminObjectId=your-object-id \
+    miPrincipalId=your-mi-principal-id
 
 # 5. Verify deployment
 az deployment sub show \
@@ -193,7 +200,54 @@ The environment can be fully rebuilt at any time with the deploy command above. 
 
 <br>
 
+## Resource Groups
+
+Both resource groups are organized by function — hub for shared platform services, spoke for workload resources.
+
+| Resource Group | Purpose |
+|---|---|
+| `rg-lab-hub` | Shared platform: networking, Bastion, Key Vault, Log Analytics |
+| `rg-lab-spoke` | Workload environment: VM, Managed Identity, NSGs |
+
+![Hub Resource Group](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/RG_Hub.png)
+![Spoke Resource Group](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/RG_Spoke.png)
+
+### Resources inside each Resource Group
+
+![Resources Hub](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Resources_hub.png)
+![Resources Spoke](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Resources_spoke.png)
+
+<br>
+
+## Networking
+
+### Virtual Networks
+
+Hub and spoke use non-overlapping address spaces — overlapping ranges cannot be peered in Azure.
+
+![VNets and Subnets](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/VNets_%26_Subnets.png)
+
+**Hub VNet — 10.0.0.0/16**
+
+![Hub VNet](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/VNet-Hub.png)
+![Hub VNet Subnets](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/VNet_Hub_Subnets.png)
+
+**Spoke VNet — 10.1.0.0/16**
+
+![Spoke VNet](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/VNet_Spoke.png)
+![Spoke VNet Subnets](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/VNet_Spoke_Subnet.png)
+
+### VNet Peering
+
+Bidirectional peering connects hub and spoke. Both directions must be created explicitly — Azure does not create them automatically.
+
+![VNet Peering](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/VNet_Peering.png)
+
+<br>
+
 ## Network Security Rules
+
+NSGs enforce least-privilege traffic control at the subnet level. Every rule has a documented purpose.
 
 ### nsg-app (snet-app — 10.1.1.0/24)
 
@@ -213,6 +267,39 @@ The environment can be fully rebuilt at any time with the deploy command above. 
 | 4000 | deny-internet-to-db | Inbound | Internet | Any | Any | Deny |
 | 65500 | DenyAllInBound | Inbound | Any | Any | Any | Deny |
 
+![NSG App Rules](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/NSG_App.png)
+![NSG DB Rules](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/NSG_DB.png)
+![NSG Rules Overview](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/NSG_rules.png)
+
+<br>
+
+## Azure Bastion
+
+Bastion provides secure SSH access to VMs through the Azure portal — no public IP required on the VM, no VPN needed, no firewall rules for specific IPs.
+
+![Azure Bastion](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Bastion.png)
+
+> **Cost note:** Bastion charges ~$0.19/hour while it exists. In this lab it is created only when VM access is needed and deleted immediately after.
+
+<br>
+
+## Key Vault
+
+Key Vault stores secrets with RBAC authorization mode — no implicit access even for the creator. Every access is logged to Log Analytics.
+
+![Key Vault Overview](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/KeyVaults_Overview.png)
+![Key Vault Secrets](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/KeyVaults_Secrets.png)
+![Key Vault IAM](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/KeyVaults_IAM.png)
+
+<br>
+
+## Virtual Machine
+
+The VM is deployed with no public IP — completely invisible to the internet. Access is via Azure Bastion only. A User-Assigned Managed Identity is attached, allowing the VM to authenticate to Key Vault without any stored credentials.
+
+![VM Status](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/VM_status.png)
+![Managed Identity](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Managed_Identity.png)
+
 <br>
 
 ## RBAC Design
@@ -223,11 +310,26 @@ The environment can be fully rebuilt at any time with the deploy command above. 
 | Operator | Reader + VM Contributor | rg-lab-spoke | Can start/stop VMs. Cannot create resources or modify security config. |
 | Auditor | Reader | Subscription | Read-only across everything. Cannot modify any resource anywhere. |
 
+![RBAC Key Vault Assignment](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/RBAC_Key_Vault_Assigment.png)
+![RBAC Spoke Assignment](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/RBAC_assigment_Spoke.png)
+
 <br>
 
 ## Observability
 
 All resources ship logs to `law-hub` (Log Analytics Workspace). Sample KQL queries are in [`docs/monitoring-design.md`](docs/monitoring-design.md).
+
+### Alert Rules
+
+![Alert Rules](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Alert_Rules.png)
+![Monitor Alert Rules](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Monitor_%20Alert_Rules.png)
+
+### Action Groups
+
+![Action Groups](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Action_groups.png)
+![Monitor Action Groups](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Monitor_Action_Groups.png)
+
+### KQL Queries
 
 **Find all Key Vault secret reads in the last 24 hours:**
 ```kql
@@ -257,21 +359,34 @@ AzureDiagnostics
 
 | Resource | Cost |
 |---|---|
-| Standard_B1s VM | ~$8/month |
+| Standard_D2s_v3 VM (running) | ~$140/month |
+| Standard_D2s_v3 VM (deallocated) | ~$2/month (disk only) |
 | Azure Bastion Basic | ~$140/month |
 | Standard Public IP | ~$3/month |
 | Key Vault | ~$0.03/month |
 | Log Analytics (lab volume) | ~$0/month |
 
-**Azure Bastion is the only expensive component.** Delete it when not in use and redeploy with one command when you need VM access. A budget alert at 80% of $20/month is configured to prevent unexpected charges.
+**Azure Bastion and the VM are the only expensive components.** Deallocate the VM and delete Bastion when not in use.
 
 ```bash
-# Stop the VM when not in use (deallocate = no compute charge)
+# Deallocate VM (stops compute billing, disk still charged)
 az vm deallocate --name vm-app-01 --resource-group rg-lab-spoke
 
 # Delete Bastion when done with SSH work
 az network bastion delete --name bastion-hub --resource-group rg-lab-hub
+az network public-ip delete --name pip-bastion --resource-group rg-lab-hub
 ```
+
+![Cost Management](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Cost_Management.png)
+![Cost Management Budgets](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Cost_Management_Budgets.png)
+
+<br>
+
+## Build History
+
+This project was built incrementally over multiple sessions — each commit represents a real infrastructure change, not a single bulk upload.
+
+![Git Log](https://raw.githubusercontent.com/ODR3N/azure-landing-zone-lab/main/screenshots/Git_log.png)
 
 <br>
 
@@ -286,6 +401,7 @@ This project was built to practice and demonstrate:
 - Azure Monitor alert rules and KQL log queries
 - Modular Bicep IaC with parameters, outputs, and cross-module references
 - Idempotent infrastructure deployments
+- Cost management and resource lifecycle discipline
 
 <br>
 
