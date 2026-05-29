@@ -5,6 +5,8 @@ param environment string = 'lab'
 param projectName string = 'LandingZone'
 param ownerName string = 'Adrian'
 param keyVaultName string
+param adminObjectId string = ''
+param miPrincipalId string = ''
 
 var tags = {
   Environment: environment
@@ -69,6 +71,8 @@ module keyVault 'modules/keyvault.bicep' = {
     keyVaultName: keyVaultName
     location: location
     tags: tags
+    adminObjectId: adminObjectId
+    miPrincipalId: miPrincipalId
   }
 }
 
